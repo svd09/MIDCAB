@@ -1,0 +1,215 @@
+---
+title: "midcab_demographics"
+author: "Salil V Deo"
+date: "4/18/2020"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Report for initial data cleaning for the **midcab** paper.
+
+```{r get libraries}
+
+library(easypackages)
+libraries(c("tidyverse","pastecs","skimr",
+           "readxl","readr","survival","relsurv","lubridate","gmodels"))
+
+proc_desc <- function(x){
+  # require library(pastecs)
+  result <- round(stat.desc(x),2)
+  hist(x, col = "skyblue")
+  result
+}
+
+proc_tab <- function(x){
+  # require libary(gmodels)
+  CrossTable(x)
+}
+
+
+# na converter
+
+c.na <- function(df,x,y){
+  df$x[df$x == y]<- NA
+}
+```
+
+
+
+```{r}
+
+# get data
+# this the sheet 1 for the file 
+
+df <- read_excel("C:\\github_rcode\\midcab\\data\\base.xlsx", sheet = 1)
+
+dim(df)
+
+glimpse(df)
+
+# create data into sections according to the information
+# Pat_ID is the patient indicator
+# create table demo with baseline demographics first and then clean that
+
+
+demo <- c("lfdNr", "THG_Referenz", "Aufnahme_Nr", "Pat_ID", "date_of_surgery", 
+  "dob", "age_at_surgery", "gender", "admission", "height_cm", 
+  "weight_kg", "BMI", "BSA_Mosteller", "pre_med_ass", "pre_med_clopidogrel", 
+  "pre_med_Gp2b_3A_antagonist", "pre_med_nitrate_iv", "pre_med_inotropika", 
+  "diabetes", "art_hypertension", "pulm_hypertension>60mmHg", "smoker", 
+  "hyperlipemia", "COPD", "peripheral_vascular_disease", "pre_creatinine_mg_dl", 
+  "pre_dialysis", "preGFR_CockcroftGault", "pre_LVEF", "pre_LVEF_function", 
+  "pre_heartrhythm", "PM_wearer", "ICD_wearer", "pre_NYHA", "pre_CCS", 
+  "pre_ASA", "priority", "elective", "urgent", "emergency", "critical_preoperative_state", 
+  "pre_reanimation", "pre_ventilation", "coronary_disease_detail", 
+  "left_main_disease", "pre_lyse", "prior_PCI", "last_PCI_date", 
+  "pre_MI", "pre_MI<48hours", "pre_MI_2_to_<21days", "pre_MI_21_to_<91days", 
+  "pre_MI_>90days", "pre_CVA", "pre_neurological_dysfunction", 
+  "pre_cardiac_shock", "pre_cardiac_shock<48hours", "pre_iabp", 
+  "pre_ecmo", "typ_a_dissection", "diss_iatrogen", "active_endocarditis", 
+  "postinfarct_septal_rupture", "prior_cardiac_surgery", "last_cardiac_surgery_date", 
+  "additive_euroSCORE", "logistic_euroscore", "CABG", "OPCAB", 
+  "MIDCAB", "TECAB")
+
+demog <- df[,c(demo)] # demog now has all the demographic information for all the patients
+
+# check if the rows are unique
+
+duplicates <- demog[duplicated(demog$Pat_ID),] # duplicated numbers 
+
+# duplicate patient id
+
+duplicates %>% select(Pat_ID) 
+```
+
+There is 1 duplicate patient. This is the demographics table; all that is the same. So I have kept 1 row and removed the other in table *demog2*.
+
+
+```{r}
+demog2 <- demog %>% 
+  group_by(Pat_ID) %>%
+  filter(!duplicated(Pat_ID)| n() == 1)
+
+```
+
+To confirm that all unique in table *demog2*
+
+```{r}
+duplicates <- demog2[duplicated(demog2$Pat_ID), ]
+
+dim(duplicates)
+
+```
+
+Now to see the data and work on cleaning.
+*demog2* now has 71 col. That is going to be the master df now.
+
+```{r}
+
+# get the first 10 col
+
+d <- demog2[, 1:10]
+
+glimpse(d)
+
+```
+
+```{r}
+# age 
+
+proc_desc(d$age_at_surgery)
+
+# age ok ; no missing 
+
+# convert dates to date in R 
+
+d$date_of_surgery <- as_date(d$date_of_surgery)
+
+d$dob <- as_date(d$dob)
+
+# gender
+
+str(d$gender)
+
+table(d$gender, useNA = 'ifany') # no missing gender 1 = male, 2= female
+
+# conv to female
+
+d$female <- d$gender - 1
+
+d$female <- factor(d$female, levels = c(0,1), labels = c("no","yes"))
+
+proc_tab(d$female)
+
+# height_cm
+
+proc_desc(d$height_cm) # missing = -9
+
+# convert that to missing data
+
+d$height_cm[d$height_cm == -9]<- NA
+
+proc_desc(d$height_cm) 
+
+```
+
+
+now go for the next 10 variables 
+
+```{r}
+d2 <- demog2 %>% select(Pat_ID,11:20)
+
+glimpse(d2)
+```
+
+
+```{r}
+
+# weight
+
+d2$weight_kg[d2$weight_kg == -9]<- NA
+
+proc_desc(d2$weight_kg)
+
+# BMI
+
+d2$BMI[d2$BMI == -9]<- NA
+
+proc_desc(d2$BMI)
+
+# make BMI meaningful so if BMI > 45, then converted to 45
+
+d2$BMI[d2$BMI > 45]<- 45
+
+proc_desc(d2$BMI)
+
+# antiplatelet agent before surgery
+# either aspirin, clopidogrel or other G2P3 antagonist
+
+d2$antiplt <- with(d2, ifelse((pre_med_ass == 1|pre_med_clopidogrel == 1| pre_med_Gp2b_3A_antagonist == 1), 1, 0))
+
+proc_tab(d2$antiplt)
+
+# diabetes
+
+proc_tab(d2$diabetes)
+
+d2$diabetes[d2$diabetes == -9]<- NA
+
+proc_tab(d2$diabetes)
+
+```
+
+
+now to tackle col 21:30 of the data
+
+```{r}
+d3 <- demog2 %>% select(Pat_ID, 21:30)
+
+glimpse(d3)
+```
+
+
