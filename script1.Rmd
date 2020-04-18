@@ -49,7 +49,8 @@ input_na <- function(x, y){
 # get data
 # this the sheet 1 for the file 
 
-df <- read_excel("C:\\github_rcode\\midcab\\data\\base.xlsx", sheet = 1)
+
+df <- read_excel("C:\\github_rcode\\midcab\\data\\new_table.xlsx", sheet = 1)
 
 dim(df)
 
@@ -116,7 +117,7 @@ Now to see the data and work on cleaning.
 
 # get the first 10 col
 
-d <- demog2[, 1:10]
+d <- demog2
 
 glimpse(d)
 
@@ -165,7 +166,7 @@ proc_desc(d$height_cm)
 now go for the next 10 variables 
 
 ```{r}
-d2 <- demog2 %>% select(Pat_ID,11:20)
+d2 <- d
 
 glimpse(d2)
 ```
@@ -212,7 +213,7 @@ proc_tab(d2$diabetes)
 now to tackle col 21:30 of the data
 
 ```{r}
-d3 <- demog2 %>% select(Pat_ID, 21:30)
+d3 <- d2
 
 glimpse(d3)
 ```
@@ -266,7 +267,7 @@ move forward with variables
 
 ```{r}
 
-d4 <- demog2 %>% select(Pat_ID, 31:40)
+d4 <- d3
 
 glimpse(d4)
 
@@ -316,7 +317,7 @@ move further down
 
 ```{r}
 
-d5 <- demog2 %>% select(Pat_ID, 41:60)
+d5 <- d4
 
 glimpse(d5)
 ```
@@ -340,5 +341,66 @@ d5$pre_MI <- input_na(d5$pre_MI, -9)
 
 proc_tab(d5$pre_MI)
 
+# prior stroke
+
+proc_tab(d5$pre_CVA)
+
+# prior IABP
+
+table(d5$pre_iabp) # no one had preop IABP
+
+# prior cardiac surgery
+
+proc_tab(d5$prior_cardiac_surgery)
+
 ```
+
+```{r}
+
+glimpse(d5)
+
+```
+
+
+- now this table d5 contains all the cleaned data for all the demographic variables.
+- need to make sure that all patients are midcab and remove tecab
+
+```{r}
+
+table(d5$CABG)
+
+proc_tab(d5$MIDCAB)
+
+proc_tab(d5$TECAB)
+
+# now to remove those patients that had tecab
+
+tecab <- read_excel("C:/github_rcode/midcab/data/tecab.xlsx", sheet = 1)
+
+glimpse(tecab)
+
+tecab <- tecab$tecab
+
+d5$tecab_add <- with(d5, ifelse(Pat_ID %in% tecab, 1, 0))
+
+proc_tab(d5$tecab_add)
+
+d5$tecab_actual <- with(d5, ifelse((TECAB ==1 |tecab_add == 1), 1, 0))
+
+proc_tab(d5$tecab_actual)
+
+```
+Have got most recent data. that is *new table* in the folder
+
+Redone all the prior code with the new table and all is good. Am using the most recent data and new table for all further analysis.
+
+Have done the demographics part. Now to do the surgery part and then follow-up part and long-term survival. 
+
+So, with removal of the duplicated patient, this new table will also contain the same patients as the earlier table. So, I will plan to use this new table instead and remove those patients that are not TECAB.
+
+Am going to rerun the prior code with the new table.
+
+----------------------------------------------------------------
+
+
 
