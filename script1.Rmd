@@ -17,6 +17,8 @@ library(easypackages)
 libraries(c("tidyverse","pastecs","skimr",
            "readxl","readr","survival","relsurv","lubridate","gmodels"))
 
+
+
 proc_desc <- function(x){
   # require library(pastecs)
   result <- round(stat.desc(x),2)
@@ -24,16 +26,19 @@ proc_desc <- function(x){
   result
 }
 
+
 proc_tab <- function(x){
   # require libary(gmodels)
-  CrossTable(x)
+  CrossTable(x, format = "SPSS")
+  
 }
 
 
 # na converter
 
-c.na <- function(df,x,y){
-  df$x[df$x == y]<- NA
+
+input_na <- function(x, y){
+  ifelse(x == y, NA, x)
 }
 ```
 
@@ -212,4 +217,128 @@ d3 <- demog2 %>% select(Pat_ID, 21:30)
 glimpse(d3)
 ```
 
+make changes to the important variables
+
+```{r}
+# copd
+
+proc_tab(d3$COPD) # no missing in COPD
+
+proc_tab(d3$hyperlipemia) # convert to na
+
+d3$hyperlipemia[d3$hyperlipemia == -9]<- NA
+
+proc_tab(d3$hyperlipemia)
+
+proc_tab(d3$peripheral_vascular_disease)
+
+d3$pad <- input_na(d3$peripheral_vascular_disease, -9)
+
+proc_tab(d3$pad) # pad
+
+
+proc_desc(d3$pre_creatinine_mg_dl)
+
+d3$creat_pre <- input_na(d3$pre_creatinine_mg_dl, -9)
+
+proc_desc(d3$creat_pre) # significant # missing
+
+proc_tab(d3$pre_dialysis)
+
+d3$pre_dialysis <- input_na(d3$pre_dialysis, -9)
+
+proc_tab(d3$pre_dialysis) # 14 missing 
+
+
+# lvef function
+
+proc_tab(d3$pre_LVEF_function)
+
+d3$pre_LVEF_function <- input_na(d3$pre_LVEF_function, -9)
+
+proc_tab(d3$pre_LVEF_function)
+
+#- not going to use lvef as not that important
+
+```
+
+move forward with variables
+
+```{r}
+
+d4 <- demog2 %>% select(Pat_ID, 31:40)
+
+glimpse(d4)
+
+```
+
+```{r}
+
+# pre_heartrhythm
+
+proc_tab(d4$pre_heartrhythm)
+
+d4$pre_heartrhythm <- input_na(d4$pre_heartrhythm, 9)
+
+d4$pre_heartrhythm <- input_na(d4$pre_heartrhythm, -9)
+
+proc_tab(d4$pre_heartrhythm)
+
+d4$pre_af <- with(d4, ifelse(pre_heartrhythm == 2, 1, 0))
+
+proc_tab(d4$pre_af)
+
+# aicd/pacemaker 
+
+proc_tab(d4$PM_wearer)
+
+proc_tab(d4$ICD_wearer)
+
+d4$icd_pm <- with(d4, ifelse((PM_wearer == 1|ICD_wearer == 1), 1, 0))
+
+proc_tab(d4$icd_pm) # has either icd or pacemaker
+
+# NYHA class 
+
+proc_tab(d4$pre_NYHA) # lot of data missing here, cannot use
+
+# same story with CCS 
+
+proc_tab(d4$priority)
+
+d4$preop_status <- factor(d4$priority, levels = c(1,2,3),
+                          labels = c("elective", "urgent", "emergent"))
+
+proc_tab(d4$preop_status)
+
+```
+move further down 
+
+```{r}
+
+d5 <- demog2 %>% select(Pat_ID, 41:60)
+
+glimpse(d5)
+```
+
+
+```{r}
+
+# prior PCI
+
+proc_tab(d5$prior_PCI)
+
+d5$prior_PCI <- input_na(d5$prior_PCI, -9)
+
+proc_tab(d5$prior_PCI)
+
+#  prior MI
+
+proc_tab(d5$pre_MI)
+
+d5$pre_MI <- input_na(d5$pre_MI, -9)
+
+proc_tab(d5$pre_MI)
+
+```
 
