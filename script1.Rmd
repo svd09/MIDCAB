@@ -56,68 +56,40 @@ dim(df)
 
 glimpse(df)
 
-# create data into sections according to the information
-# Pat_ID is the patient indicator
-# create table demo with baseline demographics first and then clean that
+#- to see if any duplicates exist
 
-
-demo <- c("lfdNr", "THG_Referenz", "Aufnahme_Nr", "Pat_ID", "date_of_surgery", 
-  "dob", "age_at_surgery", "gender", "admission", "height_cm", 
-  "weight_kg", "BMI", "BSA_Mosteller", "pre_med_ass", "pre_med_clopidogrel", 
-  "pre_med_Gp2b_3A_antagonist", "pre_med_nitrate_iv", "pre_med_inotropika", 
-  "diabetes", "art_hypertension", "pulm_hypertension>60mmHg", "smoker", 
-  "hyperlipemia", "COPD", "peripheral_vascular_disease", "pre_creatinine_mg_dl", 
-  "pre_dialysis", "preGFR_CockcroftGault", "pre_LVEF", "pre_LVEF_function", 
-  "pre_heartrhythm", "PM_wearer", "ICD_wearer", "pre_NYHA", "pre_CCS", 
-  "pre_ASA", "priority", "elective", "urgent", "emergency", "critical_preoperative_state", 
-  "pre_reanimation", "pre_ventilation", "coronary_disease_detail", 
-  "left_main_disease", "pre_lyse", "prior_PCI", "last_PCI_date", 
-  "pre_MI", "pre_MI<48hours", "pre_MI_2_to_<21days", "pre_MI_21_to_<91days", 
-  "pre_MI_>90days", "pre_CVA", "pre_neurological_dysfunction", 
-  "pre_cardiac_shock", "pre_cardiac_shock<48hours", "pre_iabp", 
-  "pre_ecmo", "typ_a_dissection", "diss_iatrogen", "active_endocarditis", 
-  "postinfarct_septal_rupture", "prior_cardiac_surgery", "last_cardiac_surgery_date", 
-  "additive_euroSCORE", "logistic_euroscore", "CABG", "OPCAB", 
-  "MIDCAB", "TECAB")
-
-demog <- df[,c(demo)] # demog now has all the demographic information for all the patients
-
-# check if the rows are unique
-
-duplicates <- demog[duplicated(demog$Pat_ID),] # duplicated numbers 
-
-# duplicate patient id
-
-duplicates %>% select(Pat_ID) 
-```
-
-There is 1 duplicate patient. This is the demographics table; all that is the same. So I have kept 1 row and removed the other in table *demog2*.
-
-
-```{r}
-demog2 <- demog %>% 
+duplicated_id <- df %>% 
   group_by(Pat_ID) %>%
-  filter(!duplicated(Pat_ID)| n() == 1)
+  filter(duplicated(Pat_ID)| n() != 1) %>%
+  select(Pat_ID)
+
+duplicated_id
+# the duplicated rows are because they have different last contact dates
+# am going to remove duplicates and keep the last instance of follow-up time of duplicates here.
+# arrange according to id and then last contact date
+
+df2 <- df %>% arrange(Pat_ID, last_contact_date)
+
+# now going to remove duplicates in patient id as they are unique
+
+df3 <- df2[!rev(duplicated(rev(df2$Pat_ID))), ]
+
+#- df3 now has the single row which has the more recent contact date
+
+#- so df3 is now the master
 
 ```
 
-To confirm that all unique in table *demog2*
 
-```{r}
-duplicates <- demog2[duplicated(demog2$Pat_ID), ]
+table df3 is the master now.
 
-dim(duplicates)
 
-```
-
-Now to see the data and work on cleaning.
-*demog2* now has 71 col. That is going to be the master df now.
 
 ```{r}
 
 # get the first 10 col
 
-d <- demog2
+d <- df3
 
 glimpse(d)
 
@@ -398,9 +370,68 @@ Have done the demographics part. Now to do the surgery part and then follow-up p
 
 So, with removal of the duplicated patient, this new table will also contain the same patients as the earlier table. So, I will plan to use this new table instead and remove those patients that are not TECAB.
 
-Am going to rerun the prior code with the new table.
+tecab_actual contains all tecab patients.
+to remove that
 
 ----------------------------------------------------------------
 
+```{r}
 
+d6 <- d5 %>% filter(tecab_actual == 0) # no tecab
+
+table(d6$tecab_actual)
+
+# confirms that now the data does not contain any tecab patients
+# write this data as demographics cleaned
+
+write_csv(d6, 'C:/github_rcode/midcab/data/d_demo.csv')
+```
+
+d_demo is now master.
+
+```{r}
+# get the d_demo data into the script
+
+d <- read_csv("c:/github_rcode/midcab/data/d_demo.csv")
+
+dim(d)
+
+glimpse(d)
+
+
+#- am going to work with the op details now
+
+
+```
+
+
+```{r}
+
+# these are the important op details that we need to look at
+# coversion to CPB is provided in the other more recent table 
+# cpb is the new excel sheet with contains patient id for all patients operated with CPB
+
+opdetails <- c( "conversion_to_onpump", "onpump_beating_heart", 
+"incompl_revascularisation",  
+"initial_thoracotomy", "conversion_to_full_sternotomy", "length_of_surgery", 
+"bypass_time", "cross_clamp_time", "cardiopleg_type", "cardiopleg_tech", 
+"cardiopleg_ml", "min_temperature")
+
+```
+
+```{r}
+
+#- working on d table to clean the operative details more
+
+proc_tab(d$conversion_to_onpump)
+
+#- am going to get the cpb table
+
+cpb <- read_excel("C:/github_rcode/midcab/data/cpb.xlsx", sheet = 1)
+
+cpb <- cpb$cpb
+
+d$cpb <- with(d, if_else()
+
+```
 
