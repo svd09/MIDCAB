@@ -1,5 +1,5 @@
 ---
-title: "midcab_demographics"
+title: "midcab_datacleaning"
 author: "Salil V Deo"
 date: "4/18/2020"
 output: word_document
@@ -15,7 +15,7 @@ Report for initial data cleaning for the **midcab** paper.
 
 library(easypackages)
 libraries(c("tidyverse","pastecs","skimr",
-           "readxl","readr","survival","relsurv","lubridate","gmodels"))
+           "readxl","readr","survival","relsurv","lubridate","gmodels","haven", "tidylog"))
 
 
 
@@ -91,9 +91,73 @@ table df3 is the master now.
 
 d <- df3
 
-glimpse(d)
+# glimpse(d)
 
 ```
+
+got more data for tecab and cpb midcab. 
+need to remove tecab patients
+also recode for cpb_midcab
+
+```{r}
+
+# remove tecab first
+
+tecab <- read_excel("C:/github_rcode/midcab/data/tecab.xlsx", sheet = 1)
+
+glimpse(tecab)
+
+tecab.l <- tecab$tecab
+
+d$tecab_add <- with(d, ifelse(Pat_ID %in% tecab.l, 1, 0))
+
+proc_tab(d$tecab_add)
+
+d$tecab_actual <- with(d, if_else((TECAB ==1 |tecab_add == 1), 1, 0))
+
+proc_tab(d$tecab_actual)
+
+# now to clear the cpb code 
+
+cpb <- read_excel("C:/github_rcode/midcab/data/cpb.xlsx", sheet = 1)
+
+cpb.l <- cpb$cpb
+
+# check if cpb and tecab are different
+
+tecab$diff <- with(tecab, if_else(tecab %in% cpb.l, 1, 0))
+
+table(tecab$diff) 
+
+# clear cpb now
+
+d$cpb_add <- with(d, if_else(Pat_ID %in% cpb.l, 1, 0))
+
+table(d$cpb_add)
+
+# now to add these cpb patients to the earlier coded conversion patients
+# also to remove tecab patients 
+
+d$cpb_actual <- with(d, if_else((conversion_to_onpump == 1|cpb_add == 1), 1, 0))
+
+proc_tab(d$cpb_actual)
+
+# cpb_actual now contains all patients who had cpb conversion
+
+# remove tecab - tecab actual
+
+d <- d %>% filter(tecab_actual == 0)
+
+proc_tab(d$cpb_actual)
+
+```
+
+
+
+
+
+
+
 
 ```{r}
 # age 
@@ -140,7 +204,7 @@ now go for the next 10 variables
 ```{r}
 d2 <- d
 
-glimpse(d2)
+# glimpse(d2)
 ```
 
 
@@ -187,7 +251,7 @@ now to tackle col 21:30 of the data
 ```{r}
 d3 <- d2
 
-glimpse(d3)
+# glimpse(d3)
 ```
 
 make changes to the important variables
@@ -241,7 +305,7 @@ move forward with variables
 
 d4 <- d3
 
-glimpse(d4)
+# glimpse(d4)
 
 ```
 
@@ -335,56 +399,15 @@ glimpse(d5)
 
 
 - now this table d5 contains all the cleaned data for all the demographic variables.
-- need to make sure that all patients are midcab and remove tecab
 
-```{r}
-
-table(d5$CABG)
-
-proc_tab(d5$MIDCAB)
-
-proc_tab(d5$TECAB)
-
-# now to remove those patients that had tecab
-
-tecab <- read_excel("C:/github_rcode/midcab/data/tecab.xlsx", sheet = 1)
-
-glimpse(tecab)
-
-tecab <- tecab$tecab
-
-d5$tecab_add <- with(d5, ifelse(Pat_ID %in% tecab, 1, 0))
-
-proc_tab(d5$tecab_add)
-
-d5$tecab_actual <- with(d5, ifelse((TECAB ==1 |tecab_add == 1), 1, 0))
-
-proc_tab(d5$tecab_actual)
-
-```
-Have got most recent data. that is *new table* in the folder
-
-Redone all the prior code with the new table and all is good. Am using the most recent data and new table for all further analysis.
-
-Have done the demographics part. Now to do the surgery part and then follow-up part and long-term survival. 
-
-So, with removal of the duplicated patient, this new table will also contain the same patients as the earlier table. So, I will plan to use this new table instead and remove those patients that are not TECAB.
-
-tecab_actual contains all tecab patients.
-to remove that
 
 ----------------------------------------------------------------
-
 ```{r}
 
-d6 <- d5 %>% filter(tecab_actual == 0) # no tecab
-
-table(d6$tecab_actual)
-
-# confirms that now the data does not contain any tecab patients
+# data contains only midcab patients
 # write this data as demographics cleaned
 
-write_csv(d6, 'C:/github_rcode/midcab/data/d_demo.csv')
+write_csv(d5, 'C:/github_rcode/midcab/data/d_demo.csv')
 ```
 
 d_demo is now master.
@@ -396,7 +419,7 @@ d <- read_csv("c:/github_rcode/midcab/data/d_demo.csv")
 
 dim(d)
 
-glimpse(d)
+# glimpse(d)
 
 
 #- am going to work with the op details now
@@ -419,19 +442,166 @@ opdetails <- c( "conversion_to_onpump", "onpump_beating_heart",
 
 ```
 
+have already data on cpb conversion, get other important data
+
 ```{r}
 
-#- working on d table to clean the operative details more
+# conversion_to_full_sternotomy
 
-proc_tab(d$conversion_to_onpump)
+proc_tab(d$conversion_to_full_sternotomy)
 
-#- am going to get the cpb table
+# cpb time
 
-cpb <- read_excel("C:/github_rcode/midcab/data/cpb.xlsx", sheet = 1)
+proc_desc(d$bypass_time) # if cpb time = 0 then na
 
-cpb <- cpb$cpb
+d$bypass_time <- with(d, input_na(bypass_time, 0))
 
-d$cpb <- with(d, if_else()
+proc_desc(d$bypass_time)
+
+# cross-clamp time
+
+proc_desc(d$cross_clamp_time) 
+
 
 ```
 
+All patients with midcab got lima - lad, so dont have consider that.
+
+```{r}
+
+# these are the postoperative data col.
+
+c("post_low_cardiac_output", 
+"post_iabp", "post_ecmo", "post_MI", "post_reanimation", "post_cardiac_arrhythmia", 
+"post_redo_heart", "post_rethorax_bleeding", "post_symptomatic_transitory_psychotic_syndrome", 
+"post_CVA", "post_CVA>72hours", "post_CVA_rankin>0", "post_DSWI", 
+"post_sepsis", "post_GI_complications", "post_maxCreatinine_mg_dl", 
+"post_maxGFR_CockcroftGault", "post_dialysis", "EK", "TK", "FFP", 
+"ventilation_time_until_first_extubation", "ventilation_time_total", 
+"post_respiratory_failure", "re_intubation", "tracheotomie", 
+"post_heartrhythm", "post_new_PM", "post_new_ICD", "dayspost", 
+"ICU_1stLOS", "ICU_LOS", "n_ICU", "Re_ICU", "IMCU_1stLOS", "IMCU_LOS", 
+"n_IMCU", "Re_IMCU", "discharge", "died", "died_inhouse", "died_fu", 
+"survival_days=", "last_contact_date", "S_Datum", "Todesursache", 
+"ReOP1_Date", "ReOP1_Text", "ReOP2_Date", "Schlaganfall", "Herzinfarkt", 
+"Revask.LAD bereich 1=AcB, 2=PTCA,Stent 0=nichts", "AP CCS", 
+"Revaskul.nichtLAD", "Date nicht LAD", "ReOP5_Text", "lad_area", 
+"rcx_area", "rca_area", "Graft1", "Graft2", "Graft3", "Graft4", 
+"Graft5", "LIMA", "RIMA", "BIMA", "Radialis", "Vene", "sonstGraft", 
+"Anz_Jump_Seq_Anastomosen", "Anz_aortaleAnastomosen", "Anz_YT_Anastomosen", 
+"LIMA_proximal", "RIMA_proximal", "Radialis_proximal", "anzahlArteriellerGrafts", 
+"lima_lad", "lima_freegraft", "rima_freegraft", "lad_graft")
+```
+
+routine important postop events are:
+post_iabp, post_MI, post_rethorax_bleeding, post_CVA, post_maxCreatinine_mg_dl, post_dialysis, dayspost, discharge, died_inhouse
+
+
+```{r}
+
+# from the list above, go 1 at at time...
+
+proc_tab(d$post_iabp)
+
+proc_tab(d$post_CVA)
+
+proc_tab(d$post_MI)
+
+d$post_MI <- with(d, input_na(post_MI, -9))
+
+proc_tab(d$post_MI)
+
+proc_desc(d$post_maxCreatinine_mg_dl)
+
+d$post_maxCreatinine_mg_dl <- with(d, input_na(post_maxCreatinine_mg_dl, -9))
+
+proc_desc(d$post_maxCreatinine_mg_dl) # creatinine too many missing,would not use
+
+proc_tab(d$post_dialysis)
+
+d$post_dialysis <- with(d, input_na(post_dialysis, -9))
+
+proc_tab(d$post_dialysis)
+
+proc_desc(d$dayspost) # LOS
+
+d$discharge_date <- as_date(d$discharge) # discharge date
+
+proc_tab(d$died_inhouse) # died in hospital 
+
+proc_tab(d$died) # total died overall
+
+proc_tab(d$died_fu) # died during follow-up
+
+```
+
+have a look at the long-term follow-up data 
+
+```{r}
+
+long_term <- c("discharge", "died", "died_inhouse", "died_fu", 
+"survival_days=", "last_contact_date", "S_Datum", "Todesursache", 
+"ReOP1_Date", "ReOP1_Text", "ReOP2_Date", "Schlaganfall", "Herzinfarkt", 
+"Revask.LAD bereich 1=AcB, 2=PTCA,Stent 0=nichts", "AP CCS", 
+"Revaskul.nichtLAD", "Date nicht LAD")
+
+```
+
+get the data organised for the last follow-up time
+first focus on long-term survival
+then look at the data for the long-term adverse events
+
+
+
+```{r}
+# correct with all changes made in original excel sheet
+
+time <- read_excel("C:/github_rcode/midcab/data/time_fup.xlsx", sheet = 1)
+
+glimpse(time)
+
+d2 <- left_join(d, time, by = "Pat_ID") # new master with follow-up time added
+
+```
+
+d2 is the master.
+
+
+```{r}
+
+# need to create the era of surgery
+
+str(d2$date_of_surgery)
+
+d2$date_of_surgery <- as_date(d2$date_of_surgery)
+
+glimpse(d2$date_of_surgery)
+
+
+d3 <- d2 %>%
+  dplyr::mutate(surg_year = lubridate::year(date_of_surgery), 
+                surg_month = lubridate::month(date_of_surgery), 
+                surg_day = lubridate::day(date_of_surgery))
+
+d3 <- d3 %>% select(-surg_month, -surg_day)
+
+d3 %>% count(surg_year) # see how many cases per year
+
+# now seperate into 2 periods
+# period 1 = 1997 - 2003
+# period 2 = 2004 - 2010
+# period 3 = 2011 - 2017
+
+d3$period <- with(d3, if_else(surg_year %in% c(1997:2003), 1,
+                                               if_else(surg_year %in% c(2004:2010), 2, 3)))
+
+d3 %>% count(period)
+
+
+write_csv(d3, "C:/github_rcode/midcab/data/d3_master_04182020.csv")
+
+```
+
+now the data d3 contains all the variables and data needed for actual analysis
+*d3* is master
+*d3* contains only *midcab* without any tecab and the latest followup time as *time* col
