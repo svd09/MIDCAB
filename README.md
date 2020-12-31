@@ -5,8 +5,11 @@ The repo does not contain any PHI or any data from the study.
 Apart from routine survival regression modelling, we used relative survival to understand the differential survival of the MIDAB group compared 
 to the German population (adjusted for age, sex and year of surgery).
 The early postoperative outcome was analysed with CUSUM charts.
+
+
 Twenty-year outcomes of minimally invasive direct coronary artery bypass surgery:
 The Leipzig experience.
+
 Piroze M. Davierwala, MD, Alexander Verevkin, MD, Laura Bergien, MD,
 Konstantin von Aspern, MD, Salil V. Deo, Martin Misfeld, MD, PhD, David Holzhey
 MD, PhD, Michael A. Borger, MD, PhD.
