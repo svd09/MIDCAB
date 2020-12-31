@@ -1,0 +1,437 @@
+------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\github_rcode\midcab\midcab_paper\JTCVS_rev1\JTCVS_rev2\parametric_model.log
+  log type:  text
+ opened on:  29 Nov 2020, 12:27:38
+
+. 
+. /* The purpose of this .do file is parametric survival model for the 
+> MIDCAB paper - JTCVS rev2. The comments were to use age as continous variable, lvef < 40% and also 
+> include incomplete revascularisation in the models.
+> the models in the earlier rev1 was exponential, so will use the same distribution here.*/
+. 
+. version 15 // Every version of Stata is slightly different, but all are backwards 
+
+. //            compatible with previous ones. If you open up this do file with a way 
+. //            newer version, it'll run it in version 14 compatibility mode. Change 
+. //            this to the current version of Stata that you are using. This will 
+. //            also keep your code from running on older versions of stata that will 
+. //            break with new code that it isn't designed to handle. 
+. 
+. set more off, permanently // so you don't have to keep clicking through stata to 
+(set more preference recorded)
+
+. //                           keep it running
+. 
+. set linesize 255 // this keeps longer lines from getting clipped. Helpful for making 
+
+. //                  tables.
+. 
+. 
+. /* set scheme for graphs */
+. 
+. set scheme sj
+
+. 
+. /* import data */
+. /* need to use only the dataset for the regression model */
+.  
+. import delim "C:/github_rcode/midcab/midcab_paper/JTCVS_rev1/pdf.csv", /// 
+> numericcols (2 3 4 5 6 7 8 11) clear // use numericcols to convert col to numeric format here
+(18 vars, 2,667 obs)
+
+. 
+. /* start code here */
+. 
+. // data
+. 
+. codebook, compact
+
+Variable       Obs Unique      Mean       Min       Max  Label
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+pat_id        2667   2667  7.81e+07  7.80e+07  7.83e+07  Pat_ID
+age_at_sur~y  2667   1933  64.46526     24.69     92.41  
+diabetes      2389      2  .2277103         0         1  
+hyperlipemia  2630      2  .7178707         0         1  
+copd          2667      2  .0404949         0         1  COPD
+pre_dialysis  2653      2  .0135695         0         1  
+prior_pci     2624      2  .2195122         0         1  prior_PCI
+pre_mi        2643      2  .2383655         0         1  pre_MI
+pre_cva       2667      2  .0374953         0         1  pre_CVA
+prior_card~y  2667      2  .0262467         0         1  
+pad           2653      2  .1500188         0         1  
+era           2667      3  1.765279         1         3  
+died          2667      2    .23997         0         1  
+fupyears      2667   2073   8.75369         0  23.57895  
+incompl_re~n  2667      3  .1124859        -9         1  
+female        2667      2         .         .         .  
+pre_lvef      2667     79  54.71804        -9        89  pre_LVEF
+ageg          2667      3         .         .         .  age.g
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+. 
+end of do-file
+
+. do "C:\Users\salil\AppData\Local\Temp\STD263c_000000.tmp"
+
+. 
+. replace diabetes = 0 if diabetes == .
+(278 real changes made)
+
+. replace hyperlipemia = 0 if hyperlipemia == .
+(37 real changes made)
+
+. replace pre_dialysis = 0 if pre_dialysis == .
+(14 real changes made)
+
+. replace prior_pci = 0 if prior_pci == .
+(43 real changes made)
+
+. replace pre_mi = 0 if pre_mi == .
+(24 real changes made)
+
+. replace pad = 0 if pad == .
+(14 real changes made)
+
+. replace lvd = 0 if lvd == .
+variable lvd not found
+r(111);
+
+end of do-file
+
+r(111);
+
+. do "C:\Users\salil\AppData\Local\Temp\STD263c_000000.tmp"
+
+. 
+. misstable summ, all
+                                                               Obs<.
+                                                +------------------------------
+               |                                | Unique
+      Variable |     Obs=.     Obs>.     Obs<.  | values        Min         Max
+  -------------+--------------------------------+------------------------------
+        pat_id |                         2,667  |   >500   7.80e+07    7.83e+07
+  age_at_sur~y |                         2,667  |   >500      24.69       92.41
+      diabetes |                         2,667  |      2          0           1
+  hyperlipemia |                         2,667  |      2          0           1
+          copd |                         2,667  |      2          0           1
+  pre_dialysis |                         2,667  |      2          0           1
+     prior_pci |                         2,667  |      2          0           1
+        pre_mi |                         2,667  |      2          0           1
+       pre_cva |                         2,667  |      2          0           1
+  prior_card~y |                         2,667  |      2          0           1
+           pad |                         2,667  |      2          0           1
+           era |                         2,667  |      3          1           3
+          died |                         2,667  |      2          0           1
+      fupyears |                         2,667  |   >500          0    23.57895
+  incompl_re~n |                         2,667  |      3         -9           1
+        female | (string variable)              |
+      pre_lvef |                         2,667  |     79         -9          89
+          ageg | (string variable)              |
+  -----------------------------------------------------------------------------
+
+. 
+end of do-file
+
+. do "C:\Users\salil\AppData\Local\Temp\STD263c_000000.tmp"
+
+. 
+. tab incompl_revascularisation
+
+incompl_rev |
+ascularisat |
+        ion |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         -9 |          4        0.15        0.15
+          0 |      2,327       87.25       87.40
+          1 |        336       12.60      100.00
+------------+-----------------------------------
+      Total |      2,667      100.00
+
+. 
+. gen incomp_revasc = .
+(2,667 missing values generated)
+
+. replace incomp_revasc = 0 if incompl_revascularisation == 0
+(2,327 real changes made)
+
+. replace incomp_revasc = 1 if incompl_revascularisation == 1
+(336 real changes made)
+
+. replace incomp_revasc = 0 if incomp_revasc == .
+(4 real changes made)
+
+. 
+. tab incomp_revasc
+
+incomp_reva |
+         sc |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |      2,331       87.40       87.40
+          1 |        336       12.60      100.00
+------------+-----------------------------------
+      Total |      2,667      100.00
+
+. 
+end of do-file
+
+. do "C:\Users\salil\AppData\Local\Temp\STD263c_000000.tmp"
+
+. 
+. gen fup_years2 = fupyears + 0.01
+
+. 
+. summ fup_years2
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  fup_years2 |      2,667     8.76369    6.449019        .01   23.58895
+
+. 
+. 
+. stset fup_years2, failure(died)
+
+     failure event:  died != 0 & died < .
+obs. time interval:  (0, fup_years2]
+ exit on or before:  failure
+
+------------------------------------------------------------------------------
+      2,667  total observations
+          0  exclusions
+------------------------------------------------------------------------------
+      2,667  observations remaining, representing
+        640  failures in single-record/single-failure data
+ 23,372.762  total analysis time at risk and under observation
+                                                at risk from t =         0
+                                     earliest observed entry t =         0
+                                          last observed exit t =  23.58895
+
+. 
+. gen female_n = .
+(2,667 missing values generated)
+
+. replace female_n = 0 if female == "no"
+(1,976 real changes made)
+
+. replace female_n = 1 if female == "yes"
+(691 real changes made)
+
+. tab female_n
+
+   female_n |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |      1,976       74.09       74.09
+          1 |        691       25.91      100.00
+------------+-----------------------------------
+      Total |      2,667      100.00
+
+. 
+end of do-file
+
+. do "C:\Users\salil\AppData\Local\Temp\STD263c_000000.tmp"
+
+. 
+. summ pre_lvef
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+    pre_lvef |      2,667    54.71804    20.44521         -9         89
+
+. 
+. replace pre_lvef = 54 if pre_lvef == -9
+(149 real changes made)
+
+. 
+. summ pre_lvef
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+    pre_lvef |      2,667    58.23772    13.36915         10         89
+
+. 
+. 
+. 
+. gen low_lvef = .
+(2,667 missing values generated)
+
+. 
+. replace low_lvef = 1 if pre_lvef <= 40
+(298 real changes made)
+
+. replace low_lvef = 0 if pre_lvef > 40
+(2,369 real changes made)
+
+. 
+. tab low_lvef
+
+   low_lvef |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |      2,369       88.83       88.83
+          1 |        298       11.17      100.00
+------------+-----------------------------------
+      Total |      2,667      100.00
+
+. 
+end of do-file
+
+. do "C:\Users\salil\AppData\Local\Temp\STD263c_000000.tmp"
+
+. stset fupyears2, fail(died)
+variable fupyears2 not found
+r(111);
+
+end of do-file
+
+r(111);
+
+. do "C:\Users\salil\AppData\Local\Temp\STD263c_000000.tmp"
+
+. 
+. gen fup_years2 = fupyears + 0.01
+variable fup_years2 already defined
+r(110);
+
+end of do-file
+
+r(110);
+
+. do "C:\Users\salil\AppData\Local\Temp\STD263c_000000.tmp"
+
+. 
+. stset fupyears2, fail(died)
+variable fupyears2 not found
+r(111);
+
+end of do-file
+
+r(111);
+
+. 
+
+. do "C:\Users\salil\AppData\Local\Temp\STD263c_000000.tmp"
+
+. 
+. gen fupyears2 = fupyear + 0.01
+
+. 
+end of do-file
+
+. do "C:\Users\salil\AppData\Local\Temp\STD263c_000000.tmp"
+
+. 
+. stset fupyears2, fail(died)
+
+     failure event:  died != 0 & died < .
+obs. time interval:  (0, fupyears2]
+ exit on or before:  failure
+
+------------------------------------------------------------------------------
+      2,667  total observations
+          0  exclusions
+------------------------------------------------------------------------------
+      2,667  observations remaining, representing
+        640  failures in single-record/single-failure data
+ 23,372.762  total analysis time at risk and under observation
+                                                at risk from t =         0
+                                     earliest observed entry t =         0
+                                          last observed exit t =  23.58895
+
+. 
+end of do-file
+
+. do "C:\Users\salil\AppData\Local\Temp\STD263c_000000.tmp"
+
+. 
+. streg i.diabetes i.hyperlipemia i.copd i.pre_dialysis i.prior_pci  ///
+> i.pre_mi i.pre_cva i.prior_cardiac_surgery i.pad age_at_surgery i.female_n pre_lvef ///
+> , distribution(exponential)
+
+         failure _d:  died
+   analysis time _t:  fupyears2
+
+Iteration 0:   log likelihood = -2078.5488  
+Iteration 1:   log likelihood = -1870.8402  
+Iteration 2:   log likelihood = -1812.7871  
+Iteration 3:   log likelihood = -1810.8867  
+Iteration 4:   log likelihood = -1810.8802  
+Iteration 5:   log likelihood = -1810.8802  
+
+Exponential PH regression
+
+No. of subjects =        2,667                  Number of obs    =       2,667
+No. of failures =          640
+Time at risk    =  23372.76245
+                                                LR chi2(12)      =      535.34
+Log likelihood  =   -1810.8802                  Prob > chi2      =      0.0000
+
+-----------------------------------------------------------------------------------------
+                     _t | Haz. Ratio   Std. Err.      z    P>|z|     [95% Conf. Interval]
+------------------------+----------------------------------------------------------------
+             1.diabetes |   1.448805   .1476915     3.64   0.000     1.186419    1.769219
+         1.hyperlipemia |   .7593255   .0636527    -3.28   0.001     .6442783    .8949164
+                 1.copd |   1.748365   .2770912     3.53   0.000      1.28153    2.385259
+         1.pre_dialysis |   2.278726   .5722398     3.28   0.001     1.392952    3.727761
+            1.prior_pci |   .6730986   .0844549    -3.15   0.002     .5263527    .8607569
+               1.pre_mi |   1.021615   .1151682     0.19   0.850     .8190867     1.27422
+              1.pre_cva |   1.370635   .2386844     1.81   0.070     .9742987    1.928196
+1.prior_cardiac_surgery |   2.255373   .3594747     5.10   0.000     1.650247    3.082393
+                  1.pad |   1.766423   .1713417     5.87   0.000     1.460592    2.136292
+         age_at_surgery |   1.060149   .0048264    12.83   0.000     1.050732    1.069651
+             1.female_n |   .7574239   .0728333    -2.89   0.004     .6273185     .914513
+               pre_lvef |   .9742892   .0028182    -9.00   0.000     .9687813    .9798285
+                  _cons |   .0029043   .0010619   -15.98   0.000     .0014185    .0059465
+-----------------------------------------------------------------------------------------
+Note: _cons estimates baseline hazard.
+
+. 
+end of do-file
+
+. do "C:\Users\salil\AppData\Local\Temp\STD263c_000000.tmp"
+
+. 
+. streg i.diabetes i.hyperlipemia i.copd i.pre_dialysis i.prior_pci  incomp_revasc ///
+> i.pre_mi i.pre_cva i.prior_cardiac_surgery i.pad age_at_surgery i.female_n low_lvef ///
+> , distribution(exponential)
+
+         failure _d:  died
+   analysis time _t:  fupyears2
+
+Iteration 0:   log likelihood = -2078.5488  
+Iteration 1:   log likelihood = -1874.3178  
+Iteration 2:   log likelihood =  -1817.913  
+Iteration 3:   log likelihood = -1817.0636  
+Iteration 4:   log likelihood = -1817.0604  
+Iteration 5:   log likelihood = -1817.0604  
+
+Exponential PH regression
+
+No. of subjects =        2,667                  Number of obs    =       2,667
+No. of failures =          640
+Time at risk    =  23372.76245
+                                                LR chi2(13)      =      522.98
+Log likelihood  =   -1817.0604                  Prob > chi2      =      0.0000
+
+-----------------------------------------------------------------------------------------
+                     _t | Haz. Ratio   Std. Err.      z    P>|z|     [95% Conf. Interval]
+------------------------+----------------------------------------------------------------
+             1.diabetes |   1.441597   .1478599     3.57   0.000     1.179068     1.76258
+         1.hyperlipemia |   .7664448   .0643061    -3.17   0.002     .6502249    .9034377
+                 1.copd |   1.755933   .2787902     3.55   0.000      1.28636     2.39692
+         1.pre_dialysis |   2.274088   .5770065     3.24   0.001     1.383028    3.739241
+            1.prior_pci |   .6770269   .0852754    -3.10   0.002     .5289227    .8666017
+          incomp_revasc |   1.190635   .1297858     1.60   0.109     .9615968    1.474227
+               1.pre_mi |   1.041924   .1182845     0.36   0.718     .8340719    1.301574
+              1.pre_cva |   1.411675   .2461732     1.98   0.048     1.002995    1.986874
+1.prior_cardiac_surgery |   2.378908   .3807498     5.41   0.000     1.738365    3.255476
+                  1.pad |   1.699924   .1664196     5.42   0.000     1.403132    2.059495
+         age_at_surgery |   1.060966    .004828    13.01   0.000     1.051545    1.070471
+             1.female_n |   .7364793   .0708147    -3.18   0.001     .6099791    .8892137
+               low_lvef |   2.346762   .2437942     8.21   0.000      1.91444    2.876713
+                  _cons |   .0005312   .0001656   -24.18   0.000     .0002883    .0009787
+-----------------------------------------------------------------------------------------
+Note: _cons estimates baseline hazard.
+
+. 
+end of do-file
+
+. exit, clear
